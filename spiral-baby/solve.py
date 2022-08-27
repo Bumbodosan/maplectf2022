@@ -13,11 +13,6 @@ With the lookup table we can easily decrypt the flag.
 FLAG: maple{0nt0_th3_r34l_sp!r4l_0be088}
 """
 
-def make_pt(pos, val, fillC = 0):
-    b = bytearray([fillC] * 16)
-    b[pos] = val
-    return bytes(b)
-
 index_lookup = {}
 m = sum(spiralRight([list(range(i, i + 4)) for i in range(0, 16, 4)]), [])
 for i in range(16):
@@ -48,11 +43,19 @@ r.sendline(b"1")
 enc_flag = bytes.fromhex(r.recvline().decode())
 
 flag_blocks = [enc_flag[i : i + 16] for i in range(0, len(enc_flag), 16)]
-FLAG = b""
+flag = b""
 for block in flag_blocks:
     dec = [0] * 16
     for i, fc in enumerate(block):
         j, pc = lookup[(i, fc)]
         dec[j] = pc
-    FLAG += bytes(dec)
-print(FLAG)
+    flag += bytes(dec)
+
+def unpad_pkcs7(data: bytes) -> bytes:
+    if len(data) % 16 != 0 or not (1 <= data[-1] <= 16) or not all(i == data[-1] for i in data[-data[-1] : ]):
+        raise ValueError("Data is not padded with valid PKCS#7!")
+    return data[ : -data[-1]]
+
+FLAG = unpad_pkcs7(flag).decode()
+
+print(f"FLAG: {FLAG}")
